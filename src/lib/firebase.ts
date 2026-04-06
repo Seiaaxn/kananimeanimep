@@ -184,12 +184,23 @@ export const onFavoritesChange = (userId: string, callback: (favorites: Favorite
 // History functions
 export const addToHistory = async (userId: string, episode: HistoryItem) => {
   const historyRef = ref(database, `history/${userId}/${episode.episodeId}`)
+  
+  // Check if this episode was already watched to avoid duplicate EXP
+  const snapshot = await get(historyRef)
+  const isNewEpisode = !snapshot.exists()
+  
   await set(historyRef, {
     ...episode,
     watchedAt: serverTimestamp()
   })
+  
   // Update user stats
   await incrementUserStat(userId, 'watchCount')
+  
+  // Only grant EXP for new episodes (first time watching)
+  if (isNewEpisode) {
+    await incrementUserStat(userId, 'exp')
+  }
 }
 
 export const updateHistoryProgress = async (userId: string, episodeId: string, progress: number) => {
@@ -249,7 +260,7 @@ export const incrementUserStat = async (userId: string, stat: 'watchCount' | 'co
     await set(userRef, {
       ...userData,
       [stat]: newValue,
-      level: stat === 'exp' ? Math.floor(newValue / 100) + 1 : userData.level || 1,
+      level: stat === 'exp' ? calculateLevel(newValue) : userData.level || 1,
       updatedAt: serverTimestamp()
     })
   }
@@ -355,14 +366,214 @@ export const deleteUser = async (targetUserId: string) => {
   // Delete user data from database
   const userRef = ref(database, `users/${targetUserId}`)
   await remove(userRef)
-  
+
   // Delete user's favorites
   const favsRef = ref(database, `favorites/${targetUserId}`)
   await remove(favsRef)
-  
+
   // Delete user's history
   const historyRef = ref(database, `history/${targetUserId}`)
   await remove(historyRef)
+}
+
+// Level System Functions
+export const calculateLevel = (exp: number): number => {
+  if (exp < 0) return 0
+
+  // Level 1-50: 300 EXP per level (total 15000 EXP for level 50)
+  if (exp < 15000) {
+    return Math.floor(exp / 300) + 1
+  }
+
+  // Level 51-100: 500 EXP per level
+  if (exp < 40000) {
+    return 50 + Math.floor((exp - 15000) / 500)
+  }
+
+  // Level 101-500: 1000 EXP per level
+  if (exp < 340000) {
+    return 100 + Math.floor((exp - 40000) / 1000)
+  }
+
+  // Level 501-1000: 2000 EXP per level
+  if (exp < 1340000) {
+    return 500 + Math.floor((exp - 340000) / 2000)
+  }
+
+  // Level 1001-5000: 5000 EXP per level
+  if (exp < 16340000) {
+    return 1000 + Math.floor((exp - 1340000) / 5000)
+  }
+
+  // Level 5001-10000: 10000 EXP per level
+  if (exp < 66340000) {
+    return 5000 + Math.floor((exp - 16340000) / 10000)
+  }
+
+  // Level 10001-50000: 20000 EXP per level
+  if (exp < 766340000) {
+    return 10000 + Math.floor((exp - 66340000) / 20000)
+  }
+
+  // Level 50001-99999: 50000 EXP per level
+  if (exp < 2466340000) {
+    return 50000 + Math.floor((exp - 766340000) / 50000)
+  }
+
+  // Beyond level 99999
+  return 99999 + Math.floor((exp - 2466340000) / 100000)
+}
+
+export const getExpForNextLevel = (currentLevel: number): number => {
+  // Calculate total EXP needed for the next level
+  return getExpRequiredForLevel(currentLevel + 1)
+}
+
+export const getExpRequiredForLevel = (level: number): number => {
+  if (level <= 0) return 0
+  if (level > 99999) level = 99999
+
+  let totalExp = 0
+
+  // Level 1-50: 300 EXP per level
+  if (level > 50) {
+    totalExp += 50 * 300
+  } else {
+    return (level - 1) * 300
+  }
+
+  // Level 51-100: 500 EXP per level
+  if (level > 100) {
+    totalExp += 50 * 500
+  } else {
+    return totalExp + (level - 50) * 500
+  }
+
+  // Level 101-500: 1000 EXP per level
+  if (level > 500) {
+    totalExp += 400 * 1000
+  } else {
+    return totalExp + (level - 100) * 1000
+  }
+
+  // Level 501-1000: 2000 EXP per level
+  if (level > 1000) {
+    totalExp += 500 * 2000
+  } else {
+    return totalExp + (level - 500) * 2000
+  }
+
+  // Level 1001-5000: 5000 EXP per level
+  if (level > 5000) {
+    totalExp += 4000 * 5000
+  } else {
+    return totalExp + (level - 1000) * 5000
+  }
+
+  // Level 5001-10000: 10000 EXP per level
+  if (level > 10000) {
+    totalExp += 5000 * 10000
+  } else {
+    return totalExp + (level - 5000) * 10000
+  }
+
+  // Level 10001-50000: 20000 EXP per level
+  if (level > 50000) {
+    totalExp += 40000 * 20000
+  } else {
+    return totalExp + (level - 10000) * 20000
+  }
+
+  // Level 50001-99999: 50000 EXP per level
+  if (level <= 99999) {
+    return totalExp + (level - 50000) * 50000
+  }
+
+  // Beyond level 99999: 100000 EXP per level
+  totalExp += 49999 * 50000
+  return totalExp + (level - 99999) * 100000
+}
+
+export const getExpRequiredForCurrentLevel = (level: number): number => {
+  return getExpRequiredForLevel(level)
+}
+
+export const getLevelEmoji = (level: number): string => {
+  if (level < 1) return '🌱'
+  if (level <= 10) return '🌱'       // Sprout - Beginner
+  if (level <= 20) return '🍃'       // Leaves - Growing
+  if (level <= 30) return '🐧'       // Penguin - Cute beginner
+  if (level <= 40) return '🍀'       // Clover - Lucky
+  if (level <= 50) return '🌿'       // Herb - Planting roots
+  if (level <= 60) return '🌵'       // Cactus - Tough
+  if (level <= 70) return '🌸'       // Cherry blossom - Beautiful
+  if (level <= 80) return '🌻'       // Sunflower - Bright
+  if (level <= 90) return '🌺'       // Hibiscus - Exotic
+  if (level <= 100) return '🌼'      // Daisy - Pure
+  if (level <= 150) return '⭐'      // Star - First achievement
+  if (level <= 200) return '🌟'      // Glowing star - Shining
+  if (level <= 250) return '✨'      // Sparkles - Magical
+  if (level <= 300) return '💫'      // Comet - Fast progress
+  if (level <= 400) return '🔮'      // Crystal ball - Wise
+  if (level <= 500) return '🌙'      // Moon - Night owl
+  if (level <= 600) return '⚡'      // Lightning - Powerful
+  if (level <= 700) return '🔥'      // Fire - Passionate
+  if (level <= 800) return '💎'      // Diamond - Precious
+  if (level <= 900) return '👑'      // Crown - Royal
+  if (level <= 1000) return '🏆'     // Trophy - Champion
+  if (level <= 1200) return '🥇'     // Gold medal - Minecraft gold
+  if (level <= 1400) return '🪙'     // Gold coin - Rich
+  if (level <= 1600) return '💰'     // Money bag - Wealthy
+  if (level <= 1800) return '💵'     // Dollar bill - Successful
+  if (level <= 2000) return '💎'     // Diamond - Premium
+  if (level <= 2500) return '👸'     // Princess/Prince - Noble
+  if (level <= 3000) return '🤴'     // King/Queen - Ruler
+  if (level <= 3500) return '🦁'     // Lion - Mighty
+  if (level <= 4000) return '🐉'     // Dragon - Legendary
+  if (level <= 4500) return '🦅'     // Eagle - Soaring high
+  if (level <= 5000) return '🦊'     // Fox - Clever
+  if (level <= 6000) return '🔱'     // Trident - Powerful
+  if (level <= 7000) return '⚜️'     // Fleur-de-lis - Elegant
+  if (level <= 8000) return '🌈'     // Rainbow - Colorful journey
+  if (level <= 9000) return '🎆'     // Fireworks - Celebration
+  if (level <= 10000) return '🎇'    // Sparkler - Sparkling
+  if (level <= 12000) return '🏅'    // Sports medal - Athletic
+  if (level <= 14000) return '🎖️'    // Military medal - Honored
+  if (level <= 16000) return '🏵️'    // Rosette - Decorated
+  if (level <= 18000) return '🌟'    // Big star - Famous
+  if (level <= 20000) return '💫'    // Big comet - Legendary
+  if (level <= 25000) return '🔮'    // Magic orb - Mystical
+  if (level <= 30000) return '👑'    // Crown - Supreme
+  if (level <= 35000) return '🐲'    // Dragon face - Ancient
+  if (level <= 40000) return '🦄'    // Unicorn - Mythical
+  if (level <= 45000) return '⚔️'    // Crossed swords - Warrior
+  if (level <= 50000) return '🛡️'    // Shield - Defender
+  if (level <= 60000) return '🌌'    // Galaxy - Cosmic
+  if (level <= 70000) return '🌠'    // Shooting star - Cosmic wish
+  if (level <= 80000) return '☄️'    // Comet - Cosmic traveler
+  if (level <= 90000) return '🌍'    // Earth - World master
+  if (level <= 99999) return '🌎'    // Globe - Global legend
+  return '🌏'                         // Ultimate level - Universe master
+}
+
+export const syncUserLevel = async (userId: string): Promise<void> => {
+  const userRef = ref(database, `users/${userId}`)
+  const snapshot = await get(userRef)
+
+  if (snapshot.exists()) {
+    const userData = snapshot.val()
+    const currentExp = userData.exp || 0
+    const calculatedLevel = calculateLevel(currentExp)
+
+    // Only update if level is incorrect
+    if (userData.level !== calculatedLevel) {
+      await set(userRef, {
+        ...userData,
+        level: calculatedLevel,
+        updatedAt: serverTimestamp()
+      })
+    }
+  }
 }
 
 // Delete chat message (admin only)
@@ -458,5 +669,3 @@ export interface UserProfile {
   createdAt: number
   updatedAt: number
 }
-
-
