@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Moon, Sun, Bell, BellOff, Info, FileText, Shield, ChevronRight, User, Save, Loader2, Heart, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Moon, Sun, Bell, BellOff, Info, FileText, Shield, ChevronRight, User, Save, Loader2, Heart, ExternalLink, Grid3x3 } from 'lucide-react'
 import { BottomNav } from '@/components/bottom-nav'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
@@ -96,7 +96,7 @@ export default function SettingsPage() {
             toast.success('Notifikasi diaktifkan')
             
             // Show test notification
-            new Notification('KANANIMEID', {
+            new Notification('SHINKANIMEID', {
               body: 'Notifikasi berhasil diaktifkan!',
               icon: '/logo-icon.jpg'
             })
@@ -300,6 +300,20 @@ export default function SettingsPage() {
             Lainnya
           </h2>
           <div className="bg-card rounded-xl border border-border overflow-hidden divide-y divide-border">
+            <Link
+              href="/more"
+              className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors"
+            >
+              <div className="p-2.5 rounded-xl bg-primary/10">
+                <Grid3x3 className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-foreground">Lebih Banyak Fitur</h3>
+                <p className="text-xs text-muted-foreground">Lihat semua fitur & halaman</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </Link>
+
             <a
               href="https://saweria.co/kananimeid"
               target="_blank"
@@ -311,7 +325,7 @@ export default function SettingsPage() {
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-medium text-foreground">Donasi</h3>
-                <p className="text-xs text-muted-foreground">Dukung pengembangan KANANIMEID</p>
+                <p className="text-xs text-muted-foreground">Dukung pengembangan SHINKANIMEID</p>
               </div>
               <ExternalLink className="w-5 h-5 text-muted-foreground" />
             </a>
@@ -362,12 +376,15 @@ export default function SettingsPage() {
 
         {/* App Version */}
         <div className="text-center pt-4">
-          <p className="text-xs text-muted-foreground">KANANIMEID v1.0.0</p>
-          <p className="text-xs text-muted-foreground mt-1">© 2024 KANANIMEID. All rights reserved.</p>
+          <p className="text-xs text-muted-foreground">SHINKANIMEID v1.0.0</p>
+          <p className="text-xs text-muted-foreground mt-1">© 2024 SHINKANIMEID. All rights reserved.</p>
         </div>
       </div>
 
       <BottomNav />
     </main>
   )
-}
+                       }
+
+
+    
