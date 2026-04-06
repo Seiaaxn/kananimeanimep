@@ -61,7 +61,7 @@ export function Header() {
   const handleNotificationClick = () => {
     if (notificationsEnabled) {
       // Navigate to notification settings
-      handleNavigation('/settings')
+      handleNavigation('/setting')
     } else {
       // Request notification permission
       if ('Notification' in window) {
