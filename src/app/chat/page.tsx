@@ -7,12 +7,13 @@ import Image from 'next/image'
 import { ArrowLeft, Send, ImagePlus, Trash2, Loader2, BadgeCheck, UserCircle, X } from 'lucide-react'
 import { BottomNav } from '@/components/bottom-nav'
 import { useAuth } from '@/contexts/auth-context'
-import { 
-  sendChatMessage, 
-  onChatMessages, 
+import {
+  sendChatMessage,
+  onChatMessages,
   clearAllChat,
   deleteChatMessage,
-  type ChatMessage 
+  getLevelEmoji,
+  type ChatMessage
 } from '@/lib/firebase'
 import { cn } from '@/lib/utils'
 
@@ -357,7 +358,7 @@ export default function ChatPage() {
                       </span>
                     )}
                     <span className={cn('text-xs', getLevelColor(msg.level))}>
-                      Lv.{msg.level}
+                      {getLevelEmoji(msg.level)} Lv.{msg.level}
                     </span>
                   </div>
                   
@@ -504,4 +505,5 @@ export default function ChatPage() {
       <BottomNav />
     </main>
   )
-}
+      }
+     
