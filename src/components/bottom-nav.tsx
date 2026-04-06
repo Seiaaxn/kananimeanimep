@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Film, MessageCircle, Bookmark, LayoutGrid, Loader2 } from 'lucide-react'
+import { Home, Film, MessageCircle, Bookmark, Settings, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -11,7 +11,7 @@ const navItems = [
   { href: '/genre', icon: Film, label: 'Genre' },
   { href: '/chat', icon: MessageCircle, label: 'Chat' },
   { href: '/favorites', icon: Bookmark, label: 'Favorit' },
-  { href: '/more', icon: LayoutGrid, label: 'Lainnya' },
+  { href: '/setting', icon: Settings, label: 'Pengaturan' },
 ]
 
 export function BottomNav() {
@@ -71,4 +71,5 @@ export function BottomNav() {
       </nav>
     </>
   )
-}
+        }
+                
