@@ -454,7 +454,7 @@ export default function ProfilePage() {
                 <Shield className="w-5 h-5" />
               </button>
             )}
-            <Link href="/settings" className="p-2 rounded-full hover:bg-muted transition-colors">
+            <Link href="/setting" className="p-2 rounded-full hover:bg-muted transition-colors">
               <Settings className="w-5 h-5 text-foreground" />
             </Link>
           </div>
