@@ -49,6 +49,13 @@ export const getUserProfile = async (userId: string) => {
   return snapshot.exists() ? snapshot.val() : null
 }
 
+export const onUserProfileChange = (userId: string, callback: (profile: UserProfile | null) => void) => {
+  const userRef = ref(database, `users/${userId}`)
+  return onValue(userRef, (snapshot) => {
+    callback(snapshot.exists() ? { uid: userId, ...snapshot.val() } as UserProfile : null)
+  })
+}
+
 export const updateUserProfile = async (userId: string, data: Record<string, unknown>) => {
   const userRef = ref(database, `users/${userId}`)
   const existing = await getUserProfile(userId)
@@ -669,3 +676,5 @@ export interface UserProfile {
   createdAt: number
   updatedAt: number
 }
+
+
