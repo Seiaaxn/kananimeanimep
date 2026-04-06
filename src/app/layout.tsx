@@ -15,16 +15,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'KANANIMEID - Streaming Anime Subtitle Indonesia',
+  title: 'SHINKANIMEID - Streaming Anime Subtitle Indonesia',
   description: 'Nonton anime subtitle Indonesia terlengkap dan terbaru. Streaming anime gratis dengan kualitas HD.',
   keywords: ['anime', 'streaming', 'subtitle indonesia', 'nonton anime', 'anime sub indo'],
-  authors: [{ name: 'KANANIMEID' }],
+  authors: [{ name: 'SHINKANIMEID' }],
   icons: {
     icon: '/logo-icon.jpg',
     apple: '/logo-icon.jpg',
   },
   openGraph: {
-    title: 'KANANIMEID - Streaming Anime Subtitle Indonesia',
+    title: 'SHINKANIMEID - Streaming Anime Subtitle Indonesia',
     description: 'Nonton anime subtitle Indonesia terlengkap dan terbaru',
     type: 'website',
     images: ['/logo-icon.jpg'],
