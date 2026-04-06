@@ -9,9 +9,11 @@ import { BottomNav } from '@/components/bottom-nav'
 import { useAuth } from '@/contexts/auth-context'
 import {
   getUserProfile,
+  onUserProfileChange,
   onFavoritesChange,
   getLevelEmoji,
   getExpForNextLevel,
+  syncUserLevel,
   type UserProfile,
   type FavoriteAnime
 } from '@/lib/firebase'
@@ -35,27 +37,28 @@ export function UserContent() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [favorites, setFavorites] = useState<FavoriteAnime[]>([])
   const [loading, setLoading] = useState(true)
-  
+
   const targetUid = searchParams.get('uid')
 
+  // Real-time user profile updates with auto-sync
   useEffect(() => {
-    async function fetchUserProfile() {
-      if (!targetUid) {
-        setLoading(false)
-        return
-      }
-
-      try {
-        const profile = await getUserProfile(targetUid)
-        setUserProfile(profile as UserProfile)
-      } catch (error) {
-        console.error('Error fetching user data:', error)
-      } finally {
-        setLoading(false)
-      }
+    if (!targetUid) {
+      setLoading(false)
+      return
     }
 
-    fetchUserProfile()
+    setLoading(true)
+
+    // Auto-sync level on mount
+    syncUserLevel(targetUid).catch(console.error)
+
+    // Listen to real-time profile changes
+    const unsubscribe = onUserProfileChange(targetUid, (profile) => {
+      setUserProfile(profile)
+      setLoading(false)
+    })
+
+    return () => unsubscribe()
   }, [targetUid])
 
   useEffect(() => {
@@ -263,4 +266,4 @@ export function LoadingState() {
     </main>
   )
 }
-         
+    
