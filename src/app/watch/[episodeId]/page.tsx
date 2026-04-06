@@ -1,13 +1,14 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, ChevronLeft, ChevronRight, Download, List } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { getEpisode } from '@/lib/api'
 import { BottomNav } from '@/components/bottom-nav'
 import { Spinner } from '@/components/ui/spinner'
 import { VideoPlayer } from '@/components/video-player'
 import { ServerSelector } from '@/components/server-selector'
 import { DownloadSection } from '@/components/download-section'
+import { EpisodeSlider } from '@/components/episode-slider'
 
 
 interface PageProps {
@@ -94,27 +95,10 @@ async function WatchContent({ episodeId }: { episodeId: string }) {
 
         {/* Episode List */}
         {episodeData.info?.episodeList && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <List className="w-4 h-4 text-primary" />
-              <h2 className="text-sm font-bold text-foreground">Episode Lainnya</h2>
-            </div>
-            <div className="grid grid-cols-5 gap-2">
-              {episodeData.info.episodeList.map((ep) => (
-                <Link
-                  key={ep.episodeId}
-                  href={`/watch/${ep.episodeId}`}
-                  className={`flex items-center justify-center py-2 rounded-lg text-sm font-medium transition-colors ${
-                    ep.episodeId === episodeId
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
-                  }`}
-                >
-                  {ep.eps}
-                </Link>
-              ))}
-            </div>
-          </div>
+          <EpisodeSlider
+            episodes={episodeData.info.episodeList}
+            currentEpisodeId={episodeId}
+          />
         )}
 
 
@@ -142,4 +126,5 @@ export default async function WatchPage({ params }: PageProps) {
       <BottomNav />
     </main>
   )
-}
+      }
+      
