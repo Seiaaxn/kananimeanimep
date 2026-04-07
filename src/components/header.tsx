@@ -71,7 +71,7 @@ export function Header() {
             window.dispatchEvent(new Event('storage')) // Trigger re-render
             
             // Show test notification
-            new Notification('KANANIMEID', {
+            new Notification('SHINKANIMEID', {
               body: 'Notifikasi berhasil diaktifkan! Kamu akan mendapat notifikasi anime terbaru.',
               icon: '/logo-icon.jpg',
               badge: '/logo-icon.jpg',
