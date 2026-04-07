@@ -74,8 +74,8 @@ export default function AuthPage() {
         {/* Logo */}
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold">
-            <span className="text-primary">SHINKA</span>
-            <span className="text-foreground">NIMEID</span>
+            <span className="text-primary">SHINKAN</span>
+            <span className="text-foreground">IMEID</span>
           </h1>
           <p className="text-muted-foreground mt-2">
             Masuk untuk melanjutkan
