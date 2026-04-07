@@ -2,6 +2,7 @@ import { initializeApp, getApps } from 'firebase/app'
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth'
 import { getDatabase, ref, push, set, get, remove, onValue, query, orderByChild, limitToLast, serverTimestamp, update } from 'firebase/database'
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { getMessaging, getToken, onMessage, type Messaging, type MessagePayload } from 'firebase/messaging'
 
 const firebaseConfig = {
   apiKey: "AIzaSyActmXTykTLOnwaGJ2tbMpTnb0pg-1floU",
@@ -18,10 +19,21 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 const auth = getAuth(app)
 const database = getDatabase(app)
 const storage = getStorage(app)
+
+// Initialize messaging only if supported
+let messaging: Messaging | null = null
+try {
+  if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
+    messaging = getMessaging(app)
+  }
+} catch (error) {
+  console.warn('Firebase Messaging is not supported in this environment:', error)
+}
+
 const googleProvider = new GoogleAuthProvider()
 
 // Re-export for use in other components
-export { ref, onValue, database, auth, storage }
+export { ref, onValue, database, auth, storage, messaging }
 
 // Auth functions
 export const signInWithGoogle = () => signInWithPopup(auth, googleProvider)
@@ -143,15 +155,41 @@ export const clearAllChat = async () => {
 // Favorites functions
 export const addFavorite = async (userId: string, anime: FavoriteAnime) => {
   const favRef = ref(database, `favorites/${userId}/${anime.animeId}`)
+  
+  // Check if already favorited to avoid duplicate count
+  const snapshot = await get(favRef)
+  if (snapshot.exists()) return
+  
   await set(favRef, {
     ...anime,
     addedAt: serverTimestamp()
   })
+  
+  // Update user favorite count
+  await incrementUserStat(userId, 'favoriteCount')
 }
 
 export const removeFavorite = async (userId: string, animeId: string) => {
   const favRef = ref(database, `favorites/${userId}/${animeId}`)
+  
+  // Check if exists before removing
+  const snapshot = await get(favRef)
+  if (!snapshot.exists()) return
+  
   await remove(favRef)
+  
+  // Decrement user favorite count
+  const userRef = ref(database, `users/${userId}`)
+  const userSnapshot = await get(userRef)
+  if (userSnapshot.exists()) {
+    const userData = userSnapshot.val()
+    const currentCount = userData.favoriteCount || 0
+    await set(userRef, {
+      ...userData,
+      favoriteCount: Math.max(0, currentCount - 1),
+      updatedAt: serverTimestamp()
+    })
+  }
 }
 
 export const getFavorites = async (userId: string): Promise<FavoriteAnime[]> => {
@@ -257,13 +295,18 @@ export const onHistoryChange = (userId: string, callback: (history: HistoryItem[
 }
 
 // User stats functions
-export const incrementUserStat = async (userId: string, stat: 'watchCount' | 'commentCount' | 'exp') => {
+export const incrementUserStat = async (userId: string, stat: 'watchCount' | 'commentCount' | 'favoriteCount' | 'exp') => {
   const userRef = ref(database, `users/${userId}`)
   const snapshot = await get(userRef)
   if (snapshot.exists()) {
     const userData = snapshot.val()
     const currentValue = userData[stat] || 0
-    const newValue = currentValue + (stat === 'exp' ? 10 : 1)
+
+    // Premium users get 5x EXP bonus
+    const isPremium = userData.isPremium || false
+    const expMultiplier = isPremium ? 5 : 1
+    const newValue = currentValue + (stat === 'exp' ? 10 * expMultiplier : 1)
+
     await set(userRef, {
       ...userData,
       [stat]: newValue,
@@ -349,6 +392,21 @@ export const setUserVerified = async (targetUserId: string, verified: boolean) =
     await set(userRef, {
       ...userData,
       verified,
+      updatedAt: serverTimestamp()
+    })
+  }
+}
+
+// Premium/VIP functions
+export const setUserPremium = async (targetUserId: string, isPremium: boolean) => {
+  const userRef = ref(database, `users/${targetUserId}`)
+  const snapshot = await get(userRef)
+  if (snapshot.exists()) {
+    const userData = snapshot.val()
+    await set(userRef, {
+      ...userData,
+      isPremium,
+      premiumSince: isPremium ? serverTimestamp() : null,
       updatedAt: serverTimestamp()
     })
   }
@@ -583,10 +641,140 @@ export const syncUserLevel = async (userId: string): Promise<void> => {
   }
 }
 
+// Sync user stats from actual data (history, comments, favorites)
+export const syncUserStats = async (userId: string): Promise<void> => {
+  const userRef = ref(database, `users/${userId}`)
+  const snapshot = await get(userRef)
+
+  if (!snapshot.exists()) return
+
+  const userData = snapshot.val()
+
+  // Count actual history items
+  const historyRef = ref(database, `history/${userId}`)
+  const historySnapshot = await get(historyRef)
+  const actualWatchCount = historySnapshot.exists() ? Object.keys(historySnapshot.val()).length : 0
+
+  // Count actual comment items
+  const commentsRef = ref(database, `userComments/${userId}`)
+  const commentsSnapshot = await get(commentsRef)
+  const actualCommentCount = commentsSnapshot.exists() ? Object.keys(commentsSnapshot.val()).length : 0
+
+  // Count actual favorite items
+  const favoritesRef = ref(database, `favorites/${userId}`)
+  const favoritesSnapshot = await get(favoritesRef)
+  const actualFavoriteCount = favoritesSnapshot.exists() ? Object.keys(favoritesSnapshot.val()).length : 0
+
+  // Update user with actual counts
+  await set(userRef, {
+    ...userData,
+    watchCount: actualWatchCount,
+    commentCount: actualCommentCount,
+    favoriteCount: actualFavoriteCount,
+    updatedAt: serverTimestamp()
+  })
+}
+
 // Delete chat message (admin only)
 export const deleteChatMessage = async (messageId: string) => {
   const messageRef = ref(database, `globalChat/${messageId}`)
   await remove(messageRef)
+}
+
+// Episode Comments Functions
+export interface EpisodeComment {
+  id: string
+  episodeId: string
+  animeId: string
+  userId: string
+  username: string
+  avatar: string | null
+  message: string
+  level: number
+  role?: 'user' | 'admin'
+  verified?: boolean
+  isPremium?: boolean
+  timestamp?: number
+}
+
+export const addEpisodeComment = async (
+  episodeId: string,
+  animeId: string,
+  userId: string,
+  username: string,
+  avatar: string | null,
+  message: string,
+  level: number,
+  role: 'user' | 'admin' = 'user',
+  verified: boolean = false,
+  isPremium: boolean = false
+) => {
+  const commentsRef = ref(database, `episodeComments/${episodeId}`)
+  const newCommentRef = push(commentsRef)
+
+  await set(newCommentRef, {
+    episodeId,
+    animeId,
+    userId,
+    username,
+    avatar,
+    message,
+    level,
+    role,
+    verified,
+    isPremium,
+    timestamp: serverTimestamp()
+  })
+
+  // Also save to user's comment history
+  const commentRef = push(ref(database, `userComments/${userId}`))
+  await set(commentRef, {
+    message,
+    timestamp: serverTimestamp()
+  })
+
+  // Update user comment count
+  await incrementUserStat(userId, 'commentCount')
+}
+
+export const getEpisodeComments = async (episodeId: string): Promise<EpisodeComment[]> => {
+  const commentsRef = ref(database, `episodeComments/${episodeId}`)
+  const snapshot = await get(commentsRef)
+  if (!snapshot.exists()) return []
+  const comments: EpisodeComment[] = []
+  snapshot.forEach((child) => {
+    comments.push({
+      id: child.key as string,
+      ...child.val()
+    })
+  })
+  return comments.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
+}
+
+export const onEpisodeCommentsChange = (
+  episodeId: string,
+  callback: (comments: EpisodeComment[]) => void
+) => {
+  const commentsRef = query(
+    ref(database, `episodeComments/${episodeId}`),
+    orderByChild('timestamp'),
+    limitToLast(50)
+  )
+  return onValue(commentsRef, (snapshot) => {
+    const comments: EpisodeComment[] = []
+    snapshot.forEach((child) => {
+      comments.push({
+        id: child.key as string,
+        ...child.val()
+      })
+    })
+    callback(comments)
+  })
+}
+
+export const deleteEpisodeComment = async (episodeId: string, commentId: string) => {
+  const commentRef = ref(database, `episodeComments/${episodeId}/${commentId}`)
+  await remove(commentRef)
 }
 
 // User comments history
@@ -671,10 +859,108 @@ export interface UserProfile {
   favoriteCount: number
   role: 'user' | 'admin'
   verified?: boolean
+  isPremium?: boolean
+  premiumSince?: number | null
   tag?: string
   tagColor?: string
   createdAt: number
   updatedAt: number
+  fcmToken?: string | null
+  notificationPreferences?: {
+    newEpisode?: boolean
+    comments?: boolean
+    replies?: boolean
+    mentions?: boolean
+    system?: boolean
+  }
+}
+
+// Push Notification Functions
+export const requestNotificationPermission = async (): Promise<boolean> => {
+  if (!('Notification' in window)) {
+    console.warn('This browser does not support desktop notification')
+    return false
+  }
+
+  if (Notification.permission === 'granted') {
+    return true
+  }
+
+  if (Notification.permission !== 'denied') {
+    const permission = await Notification.requestPermission()
+    return permission === 'granted'
+  }
+
+  return false
+}
+
+export const getFCMToken = async (): Promise<string | null> => {
+  if (!messaging) {
+    console.warn('Messaging is not supported')
+    return null
+  }
+
+  try {
+    const token = await getToken(messaging, {
+      vapidKey: 'YOUR_VAPID_KEY_HERE' // You'll need to add your VAPID key from Firebase Console
+    })
+    return token
+  } catch (error) {
+    console.error('Error getting FCM token:', error)
+    return null
+  }
+}
+
+export const saveFCMToken = async (userId: string, token: string | null) => {
+  const userRef = ref(database, `users/${userId}`)
+  const snapshot = await get(userRef)
+
+  if (snapshot.exists()) {
+    const userData = snapshot.val()
+    await set(userRef, {
+      ...userData,
+      fcmToken: token,
+      updatedAt: serverTimestamp()
+    })
+  }
+}
+
+export const onForegroundMessage = (callback: (payload: MessagePayload) => void) => {
+  if (!messaging) {
+    console.warn('Messaging is not supported')
+    return () => {}
+  }
+  return onMessage(messaging, callback)
+}
+
+export const updateNotificationPreferences = async (
+  userId: string,
+  preferences: Partial<UserProfile['notificationPreferences']>
+) => {
+  const userRef = ref(database, `users/${userId}`)
+  const snapshot = await get(userRef)
+
+  if (snapshot.exists()) {
+    const userData = snapshot.val()
+    const currentPrefs = userData.notificationPreferences || {
+      newEpisode: true,
+      comments: true,
+      replies: true,
+      mentions: true,
+      system: true
+    }
+
+    await set(userRef, {
+      ...userData,
+      notificationPreferences: {
+        ...currentPrefs,
+        ...preferences
+      },
+      updatedAt: serverTimestamp()
+    })
+  }
 }
 
 
+
+    
