@@ -26,8 +26,8 @@ export default function AboutPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">
-            <span className="text-primary">SHINKA</span>
-            <span className="text-foreground">NIMEID</span>
+            <span className="text-primary">SHINKAN</span>
+            <span className="text-foreground">IMEID</span>
           </h1>
           <p className="text-sm text-muted-foreground">Versi 1.5</p>
         </div>
@@ -78,7 +78,7 @@ export default function AboutPage() {
         {/* Credits */}
         <div className="text-center text-xs text-muted-foreground">
           <p>Dibuat dengan penuh cinta untuk pecinta anime</p>
-          <p className="mt-1">© 2025 KANANIMEID. All rights reserved.</p>
+          <p className="mt-1">© 2026 SHINKANIMEID. All rights reserved.</p>
         </div>
       </div>
 
