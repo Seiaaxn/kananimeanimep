@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Camera, Eye, MessageSquare, Heart, Settings, LogOut, ImageIcon, Loader2, Shield, Users, UserCircle, X, Check, ChevronRight, BadgeCheck, Trash2, Edit3, Save } from 'lucide-react'
+import { ArrowLeft, Camera, Eye, MessageSquare, Heart, Settings, LogOut, ImageIcon, Loader2, Shield, Users, UserCircle, X, Check, ChevronRight, BadgeCheck, Trash2, Edit3, Save, Crown } from 'lucide-react'
 import { BottomNav } from '@/components/bottom-nav'
 import { useAuth } from '@/contexts/auth-context'
 import {
@@ -16,6 +16,7 @@ import {
   updateUserLevel,
   updateUserTag,
   setUserVerified,
+  setUserPremium,
   deleteUser,
   onHistoryChange,
   onFavoritesChange,
@@ -24,6 +25,7 @@ import {
   getExpForNextLevel,
   getExpRequiredForLevel,
   syncUserLevel,
+  syncUserStats,
   type HistoryItem,
   type FavoriteAnime,
   type UserProfile,
@@ -137,12 +139,14 @@ export default function ProfilePage() {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [syncingAllLevels, setSyncingAllLevels] = useState(false)
+  const [syncingAllStats, setSyncingAllStats] = useState(false)
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
   const [editLevel, setEditLevel] = useState('')
   const [editExp, setEditExp] = useState('')
   const [editTag, setEditTag] = useState('')
   const [editTagColor, setEditTagColor] = useState('bg-purple-500')
   const [editVerified, setEditVerified] = useState(false)
+  const [editPremium, setEditPremium] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deletingUser, setDeletingUser] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -191,6 +195,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user) return
     syncUserLevel(user.uid).catch(console.error)
+    syncUserStats(user.uid).catch(console.error)
   }, [user])
 
   const loadAllUsers = async () => {
@@ -229,6 +234,24 @@ export default function ProfilePage() {
     }
   }
 
+  const handleSyncAllStats = async () => {
+    if (profile?.role !== 'admin') return
+    setSyncingAllStats(true)
+    try {
+      for (const userProfile of allUsers) {
+        await syncUserStats(userProfile.uid)
+      }
+      // Reload users to show updated stats
+      await loadAllUsers()
+      alert('Semua stats user berhasil disinkronisasi!')
+    } catch (error) {
+      console.error('Error syncing all stats:', error)
+      alert('Gagal menyinkronisasi stats')
+    } finally {
+      setSyncingAllStats(false)
+    }
+  }
+
   const handleSelectUser = (userProfile: UserProfile) => {
     setSelectedUser(userProfile)
     setEditLevel(userProfile.level?.toString() || '1')
@@ -236,6 +259,7 @@ export default function ProfilePage() {
     setEditTag(userProfile.tag || '')
     setEditTagColor(userProfile.tagColor || 'bg-purple-500')
     setEditVerified(userProfile.verified || false)
+    setEditPremium(userProfile.isPremium || false)
   }
 
   const handleSaveUserChanges = async () => {
@@ -244,7 +268,7 @@ export default function ProfilePage() {
     try {
       const newLevel = parseInt(editLevel) || 1
       const newExp = parseInt(editExp) || 0
-      
+
       await updateUserLevel(selectedUser.uid, newLevel, newExp)
       if (editTag !== selectedUser.tag || editTagColor !== selectedUser.tagColor) {
         await updateUserTag(selectedUser.uid, editTag, editTagColor)
@@ -252,14 +276,17 @@ export default function ProfilePage() {
       if (editVerified !== selectedUser.verified) {
         await setUserVerified(selectedUser.uid, editVerified)
       }
-      
+      if (editPremium !== selectedUser.isPremium) {
+        await setUserPremium(selectedUser.uid, editPremium)
+      }
+
       // Update local state
-      setAllUsers(prev => prev.map(u => 
-        u.uid === selectedUser.uid 
-          ? { ...u, level: newLevel, exp: newExp, tag: editTag, tagColor: editTagColor, verified: editVerified }
+      setAllUsers(prev => prev.map(u =>
+        u.uid === selectedUser.uid
+          ? { ...u, level: newLevel, exp: newExp, tag: editTag, tagColor: editTagColor, verified: editVerified, isPremium: editPremium }
           : u
       ))
-      
+
       setSelectedUser(null)
       alert('User berhasil diupdate!')
     } catch (error) {
@@ -428,9 +455,10 @@ export default function ProfilePage() {
   const isAdmin = profile.role === 'admin'
   const isVerified = profile.verified || isAdmin
   const isMember = !isVerified
+  const isPremium = profile.isPremium || false
 
   return (
-    <main className="min-h-screen bg-background pb-20">
+    <main className="min-h-screen bg-background pb-32">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border/50">
         <div className="flex items-center justify-between h-14 px-4">
@@ -540,7 +568,15 @@ export default function ProfilePage() {
           <div className="flex-1 pb-2">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-bold text-foreground">{profile.username}</h2>
-              
+
+              {/* Premium Badge */}
+              {isPremium && (
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/20 rounded-full">
+                  <Crown className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs text-amber-400 font-medium">Premium</span>
+                </div>
+              )}
+
               {/* Verified Badge - only for admin/verified users */}
               {isVerified && (
                 <div className="flex items-center gap-1 px-2 py-0.5 bg-cyan-500/20 rounded-full">
@@ -548,22 +584,22 @@ export default function ProfilePage() {
                   <span className="text-xs text-cyan-400 font-medium">Verified</span>
                 </div>
               )}
-              
+
               {/* Member Badge - for regular users */}
-              {isMember && (
+              {isMember && !isPremium && (
                 <div className="flex items-center gap-1 px-2 py-0.5 bg-green-500/20 rounded-full">
                   <UserCircle className="w-4 h-4 text-green-400" />
                   <span className="text-xs text-green-400 font-medium">Member</span>
                 </div>
               )}
-              
+
               {/* Role Badge */}
               {isAdmin && (
                 <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs font-medium rounded">
                   Admin
                 </span>
               )}
-              
+
               {/* Custom Tag */}
               {profile.tag && (
                 <span className={cn(
@@ -753,30 +789,48 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Stats - Real-time updates */}
+        {/* Premium Promotion Card */}
+        {!isPremium && (
+          <Link href="/premium" className="block mt-6">
+            <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-amber-500/30 rounded-xl p-4 hover:from-amber-500/30 hover:to-yellow-500/20 transition-all">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-amber-500/20 rounded-xl">
+                  <Crown className="w-6 h-6 text-amber-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-amber-400 text-sm">Upgrade ke Premium</h3>
+                  <p className="text-xs text-foreground/70 mt-1">Dapatkan EXP 5x lebih cepat!</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-amber-400" />
+              </div>
+            </div>
+          </Link>
+        )}
+
+        {/* Stats - From user profile */}
         <div className="grid grid-cols-3 gap-3 mt-6">
           <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
             <div className="flex items-center gap-1.5 text-amber-400 mb-2">
               <Eye className="w-4 h-4" />
               <span className="text-xs font-medium uppercase">Tontonan</span>
             </div>
-            <span className="text-2xl font-bold text-foreground">{watchHistory.length}</span>
+            <span className="text-2xl font-bold text-foreground">{profile.watchCount || 0}</span>
           </div>
-          
+
           <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
             <div className="flex items-center gap-1.5 text-blue-400 mb-2">
               <MessageSquare className="w-4 h-4" />
               <span className="text-xs font-medium uppercase">Komentar</span>
             </div>
-            <span className="text-2xl font-bold text-foreground">{comments.length}</span>
+            <span className="text-2xl font-bold text-foreground">{profile.commentCount || 0}</span>
           </div>
-          
+
           <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
             <div className="flex items-center gap-1.5 text-emerald-400 mb-2">
               <Heart className="w-4 h-4" />
               <span className="text-xs font-medium uppercase">Favorit</span>
             </div>
-            <span className="text-2xl font-bold text-foreground">{favorites.length}</span>
+            <span className="text-2xl font-bold text-foreground">{profile.favoriteCount || 0}</span>
           </div>
         </div>
       </div>
@@ -886,22 +940,40 @@ export default function ProfilePage() {
                 <Users className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-foreground">Daftar User ({allUsers.length})</span>
               </div>
-              <Button
-                onClick={handleSyncAllLevels}
-                disabled={syncingAllLevels || loadingUsers}
-                variant="outline"
-                size="sm"
-                className="text-xs"
-              >
-                {syncingAllLevels ? (
-                  <>
-                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                    Syncing...
-                  </>
-                ) : (
-                  'Sync All Levels'
-                )}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSyncAllStats}
+                  disabled={syncingAllStats || loadingUsers}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                >
+                  {syncingAllStats ? (
+                    <>
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      Syncing Stats...
+                    </>
+                  ) : (
+                    'Sync All Stats'
+                  )}
+                </Button>
+                <Button
+                  onClick={handleSyncAllLevels}
+                  disabled={syncingAllLevels || loadingUsers}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                >
+                  {syncingAllLevels ? (
+                    <>
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      Syncing...
+                    </>
+                  ) : (
+                    'Sync All Levels'
+                  )}
+                </Button>
+              </div>
             </div>
             
             {loadingUsers ? (
@@ -935,6 +1007,10 @@ export default function ProfilePage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium text-foreground truncate">{userProfile.username}</span>
+                        {/* Premium badge */}
+                        {userProfile.isPremium && (
+                          <Crown className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                        )}
                         {/* Verified badge for admin/verified */}
                         {(userProfile.verified || userProfile.role === 'admin') ? (
                           <BadgeCheck className="w-4 h-4 text-cyan-400 flex-shrink-0" />
@@ -1059,6 +1135,25 @@ export default function ProfilePage() {
               
               <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2">
+                  <Crown className="w-4 h-4 text-amber-400" />
+                  <span className="text-sm font-medium text-foreground">Premium</span>
+                </div>
+                <button
+                  onClick={() => setEditPremium(!editPremium)}
+                  className={cn(
+                    "w-12 h-6 rounded-full transition-colors relative",
+                    editPremium ? "bg-amber-500" : "bg-muted-foreground/30"
+                  )}
+                >
+                  <div className={cn(
+                    "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
+                    editPremium ? "translate-x-7" : "translate-x-1"
+                  )} />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2">
                   <BadgeCheck className="w-4 h-4 text-cyan-400" />
                   <span className="text-sm font-medium text-foreground">Verified</span>
                 </div>
@@ -1158,4 +1253,5 @@ export default function ProfilePage() {
       </Dialog>
     </main>
   )
-}
+                    }
+                  
