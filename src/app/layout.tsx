@@ -5,7 +5,6 @@ import { NotificationProvider } from '@/contexts/notification-context'
 import { NotificationPermission } from '@/components/notification-permission'
 import { Toaster } from '@/components/ui/toaster'
 import { NotificationChecker } from '@/components/notification-checker'
-import Script from 'next/script' // Import Script dari Next.js
 import './globals.css'
 
 const geistSans = Geist({ 
@@ -52,16 +51,6 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/logo-icon.jpg" />
         <link rel="apple-touch-icon" href="/logo-icon.jpg" />
-        
-        {/* Tambahkan Eruda hanya untuk debugging di HP */}
-        <Script 
-          src="https://cdn.jsdelivr.net/npm/eruda" 
-          strategy="afterInteractive" 
-          onLoad={() => {
-            // @ts-ignore
-            if (typeof window !== 'undefined') eruda.init();
-          }}
-        />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-background text-foreground min-h-screen`}>
         <NotificationProvider>
@@ -75,4 +64,4 @@ export default function RootLayout({
       </body>
     </html>
   )
-}
+          }
