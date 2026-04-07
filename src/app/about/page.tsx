@@ -26,8 +26,8 @@ export default function AboutPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">
-            <span className="text-primary">KANAN</span>
-            <span className="text-foreground">IMEID</span>
+            <span className="text-primary">SHINKA</span>
+            <span className="text-foreground">NIMEID</span>
           </h1>
           <p className="text-sm text-muted-foreground">Versi 1.0.0</p>
         </div>
@@ -35,7 +35,7 @@ export default function AboutPage() {
         {/* Description */}
         <div className="space-y-4 mb-8">
           <p className="text-sm text-muted-foreground leading-relaxed text-center">
-            KANANIMEID adalah platform streaming anime subtitle Indonesia yang menyediakan 
+            SHINKANIMEID adalah platform streaming anime subtitle Indonesia yang menyediakan 
             berbagai koleksi anime terlengkap dengan kualitas terbaik.
           </p>
         </div>
