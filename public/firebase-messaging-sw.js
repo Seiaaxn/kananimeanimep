@@ -96,3 +96,4 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclose', (event) => {
   console.log('[firebase-messaging-sw.js] Notification closed:', event)
 })
+  
