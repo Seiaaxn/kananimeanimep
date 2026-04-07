@@ -77,7 +77,7 @@ export function UserContent() {
 
   if (!userProfile) {
     return (
-      <main className="min-h-screen bg-background pb-20">
+      <main className="min-h-screen bg-background pb-32">
         <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border/50">
           <div className="flex items-center h-14 px-4">
             <button 
@@ -107,7 +107,7 @@ export function UserContent() {
   const isOwnProfile = user?.uid === targetUid
 
   return (
-    <main className="min-h-screen bg-background pb-20">
+    <main className="min-h-screen bg-background pb-32">
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border/50">
         <div className="flex items-center h-14 px-4">
           <button 
@@ -203,6 +203,7 @@ export function UserContent() {
           <h3 className="text-lg font-bold text-foreground mb-3 flex items-center gap-2">
             <Heart className="w-5 h-5" />
             Anime Favorit
+            <span className="text-sm font-normal text-muted-foreground">({favorites.length})</span>
           </h3>
           
           {favorites.length === 0 ? (
@@ -211,8 +212,8 @@ export function UserContent() {
               <p className="text-muted-foreground">Belum ada anime favorit</p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-3">
-              {favorites.slice(0, 12).map((item, index) => (
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+              {favorites.map((item, index) => (
                 <Link
                   key={`${item.animeId}-${index}`}
                   href={`/anime/${item.animeId}`}
@@ -265,5 +266,5 @@ export function LoadingState() {
       <Loader2 className="w-8 h-8 animate-spin text-primary" />
     </main>
   )
-}
+  }
     
