@@ -615,7 +615,7 @@ export const getLevelEmoji = (level: number): string => {
   if (level <= 50000) return '🛡️'    // Shield - Defender
   if (level <= 60000) return '🌌'    // Galaxy - Cosmic
   if (level <= 70000) return '🌠'    // Shooting star - Cosmic wish
-  if (level <= 80000) return '☄️'    // Comet - Cosmic traveler
+ if (level <= 80000) return '☄️'    // Comet - Cosmic traveler
   if (level <= 90000) return '🌍'    // Earth - World master
   if (level <= 99999) return '🌎'    // Globe - Global legend
   return '🌏'                         // Ultimate level - Universe master
@@ -901,9 +901,9 @@ export const getFCMToken = async (): Promise<string | null> => {
   }
 
   try {
-    const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY || 'BB_TbM9d6nJKW47hMsi9iHmvV9QMibR5MR7_iixL1ztIgkhtJPjidbLlDPRhQzfebWDCJrvi3MFL74n-adZfYsI'
+    const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY || ''
 
-    if (!vapidKey || vapidKey === 'BB_TbM9d6nJKW47hMsi9iHmvV9QMibR5MR7_iixL1ztIgkhtJPjidbLlDPRhQzfebWDCJrvi3MFL74n-adZfYsI') {
+    if (!vapidKey || vapidKey === 'YOUR_VAPID_KEY_HERE') {
       console.warn('VAPID key is not configured. Please set NEXT_PUBLIC_FIREBASE_VAPID_KEY in .env file')
       return null
     }
@@ -1099,4 +1099,4 @@ export const onUserNotificationsChange = (
   })
 }
 
-    
+  
