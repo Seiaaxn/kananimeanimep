@@ -902,7 +902,7 @@ export const getFCMToken = async (): Promise<string | null> => {
 
   try {
     const token = await getToken(messaging, {
-      vapidKey: 'BB_TbM9d6nJKW47hMsi9iHmvV9QMibR5MR7_iixL1ztIgkhtJPjidbLlDPRhQzfebWDCJrvi3MFL74n-adZfYsI' // You'll need to add your VAPID key from Firebase Console
+      vapidKey: 'YOUR_VAPID_KEY_HERE' // You'll need to add your VAPID key from Firebase Console
     })
     return token
   } catch (error) {
@@ -961,6 +961,135 @@ export const updateNotificationPreferences = async (
   }
 }
 
-
-
+// Check if user can receive system notifications
+export const canSendSystemNotification = async (userId: string): Promise<boolean> => {
+  try {
+    const profile = await getUserProfile(userId)
     
+    // Check if user has notification preferences
+    if (!profile?.notificationPreferences?.system) {
+      return false
+    }
+    
+    // Check if user has FCM token
+    if (!profile.fcmToken) {
+      return false
+    }
+    
+    return true
+  } catch (error) {
+    console.error('Error checking system notification permission:', error)
+    return false
+  }
+}
+
+// Send system notification to a specific user
+export const sendSystemNotification = async (
+  userId: string,
+  title: string,
+  body: string,
+  data?: Record<string, string>
+): Promise<boolean> => {
+  try {
+    // Check if user can receive system notifications
+    const canSend = await canSendSystemNotification(userId)
+    if (!canSend) {
+      console.log(`User ${userId} has system notifications disabled`)
+      return false
+    }
+
+    // In a real implementation, you would send this through Firebase Cloud Messaging
+    // via your backend server. For now, we'll store the notification in the database
+    // which can be picked up by the client
+    const notificationRef = ref(database, `notifications/${userId}`)
+    const newNotificationRef = push(notificationRef)
+
+    await set(newNotificationRef, {
+      type: 'system',
+      title,
+      body,
+      data: data || {},
+      read: false,
+      timestamp: serverTimestamp()
+    })
+
+    console.log(`System notification sent to user ${userId}: ${title}`)
+    return true
+  } catch (error) {
+    console.error('Error sending system notification:', error)
+    return false
+  }
+}
+
+// Get user's notifications
+export const getUserNotifications = async (userId: string) => {
+  const notificationsRef = ref(database, `notifications/${userId}`)
+  const snapshot = await get(notificationsRef)
+  
+  if (!snapshot.exists()) return []
+  
+  const notifications: any[] = []
+  snapshot.forEach((child) => {
+    notifications.push({
+      id: child.key as string,
+      ...child.val()
+    })
+  })
+  
+  return notifications.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+}
+
+// Mark notification as read
+export const markNotificationAsRead = async (userId: string, notificationId: string) => {
+  const notificationRef = ref(database, `notifications/${userId}/${notificationId}`)
+  const snapshot = await get(notificationRef)
+  
+  if (snapshot.exists()) {
+    const notification = snapshot.val()
+    await set(notificationRef, {
+      ...notification,
+      read: true
+    })
+  }
+}
+
+// Mark all notifications as read
+export const markAllNotificationsAsRead = async (userId: string) => {
+  const notificationsRef = ref(database, `notifications/${userId}`)
+  const snapshot = await get(notificationsRef)
+  
+  if (snapshot.exists()) {
+    const updates: Record<string, any> = {}
+    snapshot.forEach((child) => {
+      updates[`notifications/${userId}/${child.key}/read`] = true
+    })
+    await update(database, updates)
+  }
+}
+
+// Listen to user notifications
+export const onUserNotificationsChange = (
+  userId: string,
+  callback: (notifications: any[]) => void
+) => {
+  const notificationsRef = query(
+    ref(database, `notifications/${userId}`),
+    orderByChild('timestamp'),
+    limitToLast(50)
+  )
+  
+  return onValue(notificationsRef, (snapshot) => {
+    const notifications: any[] = []
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        notifications.push({
+          id: child.key as string,
+          ...child.val()
+        })
+      })
+    }
+    callback(notifications.reverse())
+  })
+}
+
+                                           
