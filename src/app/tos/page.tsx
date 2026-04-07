@@ -30,7 +30,7 @@ export default function TOSPage() {
         {/* Welcome Section */}
         <div className="bg-card rounded-xl p-5 border border-border">
           <h2 className="text-xl font-bold text-foreground mb-3">
-            Selamat datang di armada KANANIMEID!
+            Selamat datang di SHINKANIMEID!
           </h2>
           <p className="text-muted-foreground text-sm leading-relaxed">
             Dengan mengakses dan menggunakan situs web kami, Anda setuju untuk mematuhi Syarat dan Ketentuan berikut.
@@ -76,10 +76,10 @@ export default function TOSPage() {
         <div className="bg-card rounded-xl p-5 border border-border">
           <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-sm flex items-center justify-center font-bold">3</span>
-            Aturan Kru (User Conduct)
+            Aturan User 
           </h3>
           <p className="text-muted-foreground text-sm leading-relaxed mb-3">
-            Bagi Nakama yang mendaftar dan menggunakan fitur komunitas (seperti kolom komentar), Anda dilarang keras untuk:
+            Bagi User yang mendaftar dan menggunakan fitur komunitas (seperti kolom komentar), Anda dilarang keras untuk:
           </p>
           <ul className="text-muted-foreground text-sm space-y-2">
             <li className="flex items-start gap-2">
@@ -92,7 +92,7 @@ export default function TOSPage() {
             </li>
             <li className="flex items-start gap-2">
               <span className="text-red-500 mt-1">✗</span>
-              <span>Menyebarkan Spoiler berat tanpa peringatan yang merusak pengalaman menonton Nakama lain.</span>
+              <span>Menyebarkan Spoiler berat tanpa peringatan yang merusak pengalaman menonton User lain.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-red-500 mt-1">✗</span>
@@ -132,7 +132,7 @@ export default function TOSPage() {
 
         {/* Footer Note */}
         <div className="text-center text-muted-foreground text-xs pt-4">
-          <p>KANANIMEID does not host any files, it merely pulls streams from 3rd party services.</p>
+          <p>SHINKANIMEID does not host any files, it merely pulls streams from 3rd party services.</p>
           <p className="mt-1">Legal issues should be taken up with the file hosts and providers.</p>
         </div>
       </div>
