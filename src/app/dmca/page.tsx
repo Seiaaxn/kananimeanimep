@@ -34,7 +34,7 @@ export default function DMCAPage() {
             <div>
               <h2 className="text-lg font-bold text-foreground mb-2">PENGUMUMAN PENTING (DISCLAIMER)</h2>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Situs ini <span className="text-foreground font-semibold">(KANANIMEID)</span> TIDAK menyimpan, menghosting,
+                Situs ini <span className="text-foreground font-semibold">(SHINKANIMEID)</span> TIDAK menyimpan, menghosting,
                 atau mengunggah file video, gambar, atau media apa pun di server kami sendiri.
               </p>
             </div>
