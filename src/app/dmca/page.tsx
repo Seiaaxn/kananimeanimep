@@ -124,9 +124,9 @@ export default function DMCAPage() {
 
         {/* Footer Note */}
         <div className="text-center text-muted-foreground text-xs pt-4">
-          <p>KANANIMEID does not host any files, it merely pulls streams from 3rd party services.</p>
+          <p>SHINKANIMEID does not host any files, it merely pulls streams from 3rd party services.</p>
           <p className="mt-1">Legal issues should be taken up with the file hosts and providers.</p>
-          <p className="mt-1">KANANIMEID is not responsible for any media files shown by the video providers.</p>
+          <p className="mt-1">SHINKANIMEID is not responsible for any media files shown by the video providers.</p>
         </div>
       </div>
 
