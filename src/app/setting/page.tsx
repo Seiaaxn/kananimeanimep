@@ -354,8 +354,8 @@ export default function SettingsPage() {
 
         {/* App Version */}
         <div className="text-center pt-4">
-          <p className="text-xs text-muted-foreground">SHINKANIMEID v1.0.0</p>
-          <p className="text-xs text-muted-foreground mt-1">© 2024 SHINKANIMEID. All rights reserved.</p>
+          <p className="text-xs text-muted-foreground">SHINKANIMEID v1.5</p>
+          <p className="text-xs text-muted-foreground mt-1">© 2026 SHINKANIMEID. All rights reserved.</p>
         </div>
       </div>
 
@@ -378,5 +378,5 @@ export default function SettingsPage() {
       </Dialog>
     </main>
   )
-        }
-                
+  }
+                        
