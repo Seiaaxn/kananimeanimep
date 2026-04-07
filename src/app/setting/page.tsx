@@ -3,23 +3,27 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Moon, Sun, Bell, BellOff, Info, FileText, Shield, ChevronRight, User, Save, Loader2, Heart, ExternalLink, Grid3x3 } from 'lucide-react'
+import { ArrowLeft, Moon, Sun, Info, FileText, Shield, ChevronRight, User, Save, Loader2, Heart, ExternalLink, Grid3x3, Settings as SettingsIcon } from 'lucide-react'
 import { BottomNav } from '@/components/bottom-nav'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
+import { useNotification } from '@/contexts/notification-context'
 import { updateUserProfile } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
+import { NotificationSettings } from '@/components/notification-settings'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 export default function SettingsPage() {
   const router = useRouter()
   const { user, profile, refreshProfile } = useAuth()
-  
+  const { hasPermission, requestPermission, isSupported } = useNotification()
+
   // Theme state
   const [darkMode, setDarkMode] = useState(true)
-  const [notifications, setNotifications] = useState(true)
-  
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false)
+
   // Edit name state
   const [editingName, setEditingName] = useState(false)
   const [newName, setNewName] = useState('')
@@ -28,8 +32,7 @@ export default function SettingsPage() {
   // Initialize settings from localStorage on mount
   useEffect(() => {
     const savedDarkMode = localStorage.getItem('darkMode')
-    const savedNotifications = localStorage.getItem('notifications')
-    
+
     if (savedDarkMode !== null) {
       const isDark = savedDarkMode === 'true'
       setDarkMode(isDark)
@@ -37,10 +40,6 @@ export default function SettingsPage() {
     } else {
       // Default to dark mode
       applyTheme(true)
-    }
-    
-    if (savedNotifications !== null) {
-      setNotifications(savedNotifications === 'true')
     }
   }, [])
 
@@ -53,7 +52,7 @@ export default function SettingsPage() {
 
   const applyTheme = (isDark: boolean) => {
     const root = document.documentElement
-    
+
     if (isDark) {
       root.classList.add('dark')
       root.classList.remove('light')
@@ -83,40 +82,28 @@ export default function SettingsPage() {
     toast.success(newValue ? 'Mode gelap diaktifkan' : 'Mode terang diaktifkan')
   }
 
-  const toggleNotifications = () => {
-    const newValue = !notifications
-    
-    if (newValue) {
-      // Request notification permission
-      if ('Notification' in window) {
-        Notification.requestPermission().then((permission) => {
-          if (permission === 'granted') {
-            setNotifications(true)
-            localStorage.setItem('notifications', 'true')
-            toast.success('Notifikasi diaktifkan')
-            
-            // Show test notification
-            new Notification('SHINKANIMEID', {
-              body: 'Notifikasi berhasil diaktifkan!',
-              icon: '/logo-icon.jpg'
-            })
-          } else {
-            toast.error('Izin notifikasi ditolak')
-          }
-        })
+  const handleNotificationClick = async () => {
+    if (!isSupported) {
+      toast.error('Browser tidak mendukung notifikasi')
+      return
+    }
+
+    if (!hasPermission) {
+      const granted = await requestPermission()
+      if (granted) {
+        toast.success('Notifikasi diaktifkan')
+        setShowNotificationSettings(true)
       } else {
-        toast.error('Browser tidak mendukung notifikasi')
+        toast.error('Izin notifikasi ditolak')
       }
     } else {
-      setNotifications(false)
-      localStorage.setItem('notifications', 'false')
-      toast.success('Notifikasi dimatikan')
+      setShowNotificationSettings(true)
     }
   }
 
   const handleSaveName = async () => {
     if (!user || !newName.trim()) return
-    
+
     setSavingName(true)
     try {
       await updateUserProfile(user.uid, { username: newName.trim() })
@@ -136,7 +123,7 @@ export default function SettingsPage() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border/50">
         <div className="flex items-center gap-3 h-14 px-4">
-          <button 
+          <button
             onClick={() => router.back()}
             className="p-2 -ml-2 rounded-full hover:bg-muted transition-colors"
           >
@@ -165,7 +152,7 @@ export default function SettingsPage() {
                     <p className="text-xs text-muted-foreground">Ubah nama tampilan kamu</p>
                   </div>
                 </div>
-                
+
                 {editingName ? (
                   <div className="flex gap-2">
                     <Input
@@ -232,14 +219,14 @@ export default function SettingsPage() {
                   <Sun className="w-5 h-5 text-yellow-500" />
                 )}
               </div>
-              
+
               <div className="flex-1 text-left">
                 <h3 className="text-sm font-medium text-foreground">Mode Gelap</h3>
                 <p className="text-xs text-muted-foreground">
                   {darkMode ? 'Mode gelap aktif (hitam)' : 'Mode terang aktif (putih)'}
                 </p>
               </div>
-              
+
               <div className={cn(
                 "w-12 h-7 rounded-full transition-colors relative",
                 darkMode ? "bg-primary" : "bg-muted-foreground/30"
@@ -260,36 +247,27 @@ export default function SettingsPage() {
           </h2>
           <div className="bg-card rounded-xl border border-border overflow-hidden divide-y divide-border">
             <button
-              onClick={toggleNotifications}
+              onClick={handleNotificationClick}
               className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors"
             >
               <div className={cn(
                 "p-2.5 rounded-xl",
-                notifications ? "bg-primary/10" : "bg-muted"
+                hasPermission ? "bg-primary/10" : "bg-muted"
               )}>
-                {notifications ? (
-                  <Bell className="w-5 h-5 text-primary" />
-                ) : (
-                  <BellOff className="w-5 h-5 text-muted-foreground" />
-                )}
-              </div>
-              
-              <div className="flex-1 text-left">
-                <h3 className="text-sm font-medium text-foreground">Notifikasi</h3>
-                <p className="text-xs text-muted-foreground">
-                  {notifications ? 'Notifikasi aktif - menerima push notification' : 'Notifikasi dimatikan'}
-                </p>
-              </div>
-              
-              <div className={cn(
-                "w-12 h-7 rounded-full transition-colors relative",
-                notifications ? "bg-primary" : "bg-muted-foreground/30"
-              )}>
-                <div className={cn(
-                  "absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-transform",
-                  notifications ? "translate-x-6" : "translate-x-1"
+                <SettingsIcon className={cn(
+                  "w-5 h-5",
+                  hasPermission ? "text-primary" : "text-muted-foreground"
                 )} />
               </div>
+
+              <div className="flex-1 text-left">
+                <h3 className="text-sm font-medium text-foreground">Pengaturan Notifikasi</h3>
+                <p className="text-xs text-muted-foreground">
+                  {hasPermission ? 'Notifikasi aktif - Klik untuk pengaturan' : 'Notifikasi dimatikan - Klik untuk aktifkan'}
+                </p>
+              </div>
+
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
         </div>
@@ -329,7 +307,7 @@ export default function SettingsPage() {
               </div>
               <ExternalLink className="w-5 h-5 text-muted-foreground" />
             </a>
-            
+
             <Link
               href="/about"
               className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors"
@@ -343,7 +321,7 @@ export default function SettingsPage() {
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </Link>
-            
+
             <Link
               href="/tos"
               className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors"
@@ -357,7 +335,7 @@ export default function SettingsPage() {
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </Link>
-            
+
             <Link
               href="/dmca"
               className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors"
@@ -382,9 +360,23 @@ export default function SettingsPage() {
       </div>
 
       <BottomNav />
+
+      {/* Notification Settings Dialog */}
+      <Dialog open={showNotificationSettings} onOpenChange={setShowNotificationSettings}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-foreground flex items-center gap-2">
+              <SettingsIcon className="w-5 h-5 text-primary" />
+              Pengaturan Notifikasi
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="mt-4">
+            <NotificationSettings />
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   )
-                       }
-
-
-    
+        }
+                
