@@ -505,5 +505,5 @@ export default function ChatPage() {
       <BottomNav />
     </main>
   )
-      }
-     
+        }
+    
