@@ -61,9 +61,20 @@ export function NotificationSettings() {
 
   const handleToggle = async (key: NotificationType) => {
     setLoading(key)
-    const currentValue = preferences?.[key] ?? true
-    await updatePreferences({ [key]: !currentValue })
-    setLoading(null)
+    try {
+      const currentValue = preferences?.[key] ?? true
+      await updatePreferences({ [key]: !currentValue })
+
+      // Show feedback based on permission
+      if (!hasPermission) {
+        // Preference saved, but notifications won't work until permission is granted
+        // This is okay - we're just saving their preference
+      }
+    } catch (error) {
+      console.error('Error updating notification preference:', error)
+    } finally {
+      setLoading(null)
+    }
   }
 
   const handleEnableNotifications = async () => {
@@ -155,10 +166,15 @@ export function NotificationSettings() {
                   <Switch
                     checked={isEnabled}
                     onCheckedChange={() => handleToggle(type.key)}
-                    disabled={isLoading || !hasPermission}
+                    disabled={isLoading}
                   />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">{type.description}</p>
+                {!hasPermission && isEnabled && (
+                  <p className="text-[10px] text-amber-500 mt-1">
+                    ⚠️ Aktifkan notifikasi di atas agar fitur ini berfungsi
+                  </p>
+                )}
               </div>
 
               {isLoading && (
@@ -170,11 +186,15 @@ export function NotificationSettings() {
       </div>
 
       {!hasPermission && (
-        <p className="text-xs text-muted-foreground text-center">
-          Aktifkan notifikasi terlebih dahulu untuk mengubah pengaturan
-        </p>
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+          <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
+            💡 <strong>Penting:</strong> Aktifkan notifikasi di atas agar fitur push notification berfungsi.
+            <br />
+            Pengaturan di bawah ini akan tersimpan, tapi notifikasi hanya akan muncul setelah kamu memberikan izin.
+          </p>
+        </div>
       )}
     </div>
   )
-      }
-      
+              }
+              
