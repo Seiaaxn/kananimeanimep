@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react'
 interface AnimeItem {
   animeId: string
   title: string
+  poster?: string
 }
 
 export function NotificationChecker() {
@@ -46,11 +47,14 @@ export function NotificationChecker() {
           // Show notification for new anime (max 1 to avoid spam)
           if (newAnime.length > 0 && 'Notification' in window && Notification.permission === 'granted') {
             const anime = newAnime[0]
-            new Notification('🎬 Anime Terbaru!', {
-              body: `${anime.title} episode baru sudah tersedia!`,
-              icon: '/logo-icon.jpg',
+            // Use anime poster as notification icon, fallback to logo
+            const notificationIcon = anime.poster || '/logo-icon.jpg'
+
+            new Notification(`${anime.title}`, {
+              body: '🎬 Episode baru sudah tersedia!',
+              icon: notificationIcon,
               badge: '/logo-icon.jpg',
-              tag: 'new-anime',
+              tag: `anime-${anime.animeId}`,
               data: { url: `/anime/${anime.animeId}` }
             })
           }
@@ -75,4 +79,4 @@ export function NotificationChecker() {
   }, [])
   
   return null
-}
+              }
