@@ -16,7 +16,7 @@ interface PageProps {
 
 async function AnimeDetailContent({ animeId }: { animeId: string }) {
   let animeDetail
-  
+
   try {
     animeDetail = await getAnimeDetail(animeId)
   } catch {
@@ -28,6 +28,35 @@ async function AnimeDetailContent({ animeId }: { animeId: string }) {
   }
 
   const firstEpisode = animeDetail.episodeList?.[animeDetail.episodeList.length - 1]
+
+  // Helper function to get synopsis text
+  const getSynopsisText = (synopsis: any): string => {
+    if (!synopsis) return ''
+
+    // If synopsis is a string, return it directly
+    if (typeof synopsis === 'string') {
+      return synopsis.trim()
+    }
+
+    // If synopsis has paragraphs property
+    if (synopsis.paragraphs && Array.isArray(synopsis.paragraphs)) {
+      return synopsis.paragraphs.join('\n\n').trim()
+    }
+
+    // If synopsis is an object, try to get any string value
+    if (typeof synopsis === 'object') {
+      const values = Object.values(synopsis)
+      for (const value of values) {
+        if (typeof value === 'string' && value.trim()) {
+          return value.trim()
+        }
+      }
+    }
+
+    return ''
+  }
+
+  const synopsisText = getSynopsisText(animeDetail.synopsis)
 
   return (
     <>
@@ -130,10 +159,8 @@ async function AnimeDetailContent({ animeId }: { animeId: string }) {
         <section className="mt-6">
           <h2 className="text-sm font-bold text-foreground mb-1">SINOPSIS</h2>
           <div className="w-8 h-0.5 bg-primary rounded-full mb-3" />
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {animeDetail.synopsis?.paragraphs?.length 
-              ? animeDetail.synopsis.paragraphs.join('\n\n')
-              : 'Sinopsis belum tersedia.'}
+          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+            {synopsisText || 'Sinopsis belum tersedia.'}
           </p>
         </section>
 
@@ -247,4 +274,5 @@ export default async function AnimeDetailPage({ params }: PageProps) {
       <BottomNav />
     </main>
   )
-}
+                }
+          
