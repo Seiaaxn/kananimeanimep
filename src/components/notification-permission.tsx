@@ -98,4 +98,4 @@ export function NotificationPermission() {
       </div>
     </div>
   )
-}
+        }
