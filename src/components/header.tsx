@@ -103,8 +103,8 @@ export function Header() {
         <div className="flex items-center justify-between h-14 px-4 max-w-7xl mx-auto">
           <Link href="/" className="flex items-center gap-1">
             <span className="text-xl font-bold">
-              <span className="text-primary">KANAN</span>
-              <span className="text-foreground">IMEID</span>
+              <span className="text-primary">SHINKA</span>
+              <span className="text-foreground">NIMEID</span>
             </span>
           </Link>
 
