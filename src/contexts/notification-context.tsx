@@ -8,8 +8,19 @@ import {
   saveFCMToken,
   onForegroundMessage,
   updateNotificationPreferences,
+  onUserNotificationsChange,
   type UserProfile
 } from '@/lib/firebase'
+
+interface NotificationItem {
+  id: string
+  type: string
+  title: string
+  body: string
+  data?: Record<string, string>
+  read: boolean
+  timestamp: number
+}
 
 interface NotificationContextType {
   permission: NotificationPermission
@@ -19,6 +30,10 @@ interface NotificationContextType {
   preferences: UserProfile['notificationPreferences']
   updatePreferences: (prefs: Partial<UserProfile['notificationPreferences']>) => Promise<void>
   hasPermission: boolean
+  notifications: NotificationItem[]
+  unreadCount: number
+  markAsRead: (notificationId: string) => Promise<void>
+  markAllAsRead: () => Promise<void>
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
@@ -32,6 +47,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return 'default'
   })
   const [token, setToken] = useState<string | null>(null)
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [isSupported] = useState(() => typeof window !== 'undefined' && 'Notification' in window)
 
   // Request FCM token and save it
@@ -52,6 +68,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     setupFCMToken()
   }, [user, permission, profile?.fcmToken])
+
+  // Listen to user notifications
+  useEffect(() => {
+    if (!user) return
+
+    const unsubscribe = onUserNotificationsChange(user.uid, (newNotifications) => {
+      setNotifications(newNotifications)
+    })
+
+    return () => {
+      if (unsubscribe) unsubscribe()
+    }
+  }, [user])
 
   // Handle foreground messages
   useEffect(() => {
@@ -93,6 +122,24 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     await updateNotificationPreferences(user.uid, prefs)
   }
 
+  const markAsRead = async (notificationId: string) => {
+    if (!user) return
+    
+    // Import the function dynamically to avoid circular dependency
+    const { markNotificationAsRead } = await import('@/lib/firebase')
+    await markNotificationAsRead(user.uid, notificationId)
+  }
+
+  const markAllAsRead = async () => {
+    if (!user) return
+    
+    // Import the function dynamically to avoid circular dependency
+    const { markAllNotificationsAsRead } = await import('@/lib/firebase')
+    await markAllNotificationsAsRead(user.uid)
+  }
+
+  const unreadCount = notifications.filter(n => !n.read).length
+
   const value: NotificationContextType = {
     permission,
     requestPermission,
@@ -106,7 +153,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       system: true
     },
     updatePreferences,
-    hasPermission: permission === 'granted'
+    hasPermission: permission === 'granted',
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead
   }
 
   return (
@@ -123,4 +174,4 @@ export function useNotification() {
   }
   return context
     }
-                    
+    
