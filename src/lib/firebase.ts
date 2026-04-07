@@ -901,8 +901,15 @@ export const getFCMToken = async (): Promise<string | null> => {
   }
 
   try {
+    const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY || ''
+
+    if (!vapidKey || vapidKey === 'YOUR_VAPID_KEY_HERE') {
+      console.warn('VAPID key is not configured. Please set NEXT_PUBLIC_FIREBASE_VAPID_KEY in .env file')
+      return null
+    }
+
     const token = await getToken(messaging, {
-      vapidKey: 'BB_TbM9d6nJKW47hMsi9iHmvV9QMibR5MR7_iixL1ztIgkhtJPjidbLlDPRhQzfebWDCJrvi3MFL74n-adZfYsI' // You'll need to add your VAPID key from Firebase Console
+      vapidKey: vapidKey
     })
     return token
   } catch (error) {
@@ -1092,4 +1099,4 @@ export const onUserNotificationsChange = (
   })
 }
 
-                                           
+    
