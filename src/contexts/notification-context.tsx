@@ -49,6 +49,20 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null)
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [isSupported] = useState(() => typeof window !== 'undefined' && 'Notification' in window)
+  const [localPreferences, setLocalPreferences] = useState<UserProfile['notificationPreferences']>({
+    newEpisode: true,
+    comments: true,
+    replies: true,
+    mentions: true,
+    system: true
+  })
+
+  // Sync local preferences with profile
+  useEffect(() => {
+    if (profile?.notificationPreferences) {
+      setLocalPreferences(profile.notificationPreferences)
+    }
+  }, [profile?.notificationPreferences])
 
   // Request FCM token and save it
   useEffect(() => {
@@ -119,6 +133,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const updatePreferences = async (prefs: Partial<UserProfile['notificationPreferences']>) => {
     if (!user) return
+
+    // Update local state immediately for instant UI feedback
+    setLocalPreferences(prev => ({
+      ...prev,
+      ...prefs
+    }))
+
+    // Update Firebase in background
     await updateNotificationPreferences(user.uid, prefs)
   }
 
@@ -145,13 +167,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     requestPermission,
     isSupported,
     token,
-    preferences: profile?.notificationPreferences || {
-      newEpisode: true,
-      comments: true,
-      replies: true,
-      mentions: true,
-      system: true
-    },
+    preferences: localPreferences,
     updatePreferences,
     hasPermission: permission === 'granted',
     notifications,
