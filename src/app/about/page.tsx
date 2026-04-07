@@ -29,7 +29,7 @@ export default function AboutPage() {
             <span className="text-primary">SHINKA</span>
             <span className="text-foreground">NIMEID</span>
           </h1>
-          <p className="text-sm text-muted-foreground">Versi 1.0.0</p>
+          <p className="text-sm text-muted-foreground">Versi 1.5</p>
         </div>
 
         {/* Description */}
