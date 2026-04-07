@@ -902,7 +902,7 @@ export const getFCMToken = async (): Promise<string | null> => {
 
   try {
     const token = await getToken(messaging, {
-      vapidKey: 'YOUR_VAPID_KEY_HERE' // You'll need to add your VAPID key from Firebase Console
+      vapidKey: 'BB_TbM9d6nJKW47hMsi9iHmvV9QMibR5MR7_iixL1ztIgkhtJPjidbLlDPRhQzfebWDCJrvi3MFL74n-adZfYsI' // You'll need to add your VAPID key from Firebase Console
     })
     return token
   } catch (error) {
