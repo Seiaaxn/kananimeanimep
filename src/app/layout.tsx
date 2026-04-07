@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { AuthProvider } from '@/contexts/auth-context'
+import { NotificationProvider } from '@/contexts/notification-context'
+import { NotificationPermission } from '@/components/notification-permission'
 import { Toaster } from '@/components/ui/toaster'
 import { NotificationChecker } from '@/components/notification-checker'
 import './globals.css'
@@ -51,10 +53,13 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/logo-icon.jpg" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-background text-foreground min-h-screen`}>
-        <AuthProvider>
-          <NotificationChecker />
-          {children}
-        </AuthProvider>
+        <NotificationProvider>
+          <AuthProvider>
+            <NotificationPermission />
+            <NotificationChecker />
+            {children}
+          </AuthProvider>
+        </NotificationProvider>
         <Toaster />
       </body>
     </html>
