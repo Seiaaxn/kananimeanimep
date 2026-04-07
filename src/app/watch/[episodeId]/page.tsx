@@ -9,6 +9,7 @@ import { VideoPlayer } from '@/components/video-player'
 import { ServerSelector } from '@/components/server-selector'
 import { DownloadSection } from '@/components/download-section'
 import { EpisodeSlider } from '@/components/episode-slider'
+import { EpisodeComments } from '@/components/episode-comments'
 
 
 interface PageProps {
@@ -101,6 +102,11 @@ async function WatchContent({ episodeId }: { episodeId: string }) {
           />
         )}
 
+        {/* Comments Section */}
+        <EpisodeComments
+          episodeId={episodeId}
+          animeId={episodeData.animeId}
+        />
 
       </div>
     </>
@@ -117,9 +123,9 @@ function LoadingState() {
 
 export default async function WatchPage({ params }: PageProps) {
   const { episodeId } = await params
-  
+
   return (
-    <main className="min-h-screen bg-background pb-20">
+    <main className="min-h-screen bg-background pb-32">
       <Suspense fallback={<LoadingState />}>
         <WatchContent episodeId={episodeId} />
       </Suspense>
@@ -127,4 +133,4 @@ export default async function WatchPage({ params }: PageProps) {
     </main>
   )
       }
-      
+        
