@@ -57,7 +57,7 @@ const externalLinks = [
     href: 'https://saweria.co/kananimeid',
     icon: Heart,
     title: 'Donasi',
-    description: 'Dukung pengembangan KANANIMEID',
+    description: 'Dukung pengembangan SHINKANIMEID',
     iconBg: 'bg-pink-500/10',
     iconColor: 'text-pink-500'
   },
